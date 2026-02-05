@@ -15,12 +15,11 @@
         body { background-color: var(--fondo); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; color: var(--texto); overflow-x: hidden; }
         h1 { margin: 20px 0; font-size: 1.6rem; text-align: center; z-index: 2; }
         .btn-notif { background: var(--rosa); color: white; border: none; padding: 12px 25px; border-radius: 25px; font-weight: bold; margin-bottom: 25px; cursor: pointer; z-index: 2; box-shadow: 0 4px 15px rgba(255, 77, 109, 0.3); }
-        #contenedor { width: 100%; max-width: 400px; z-index: 2; }
-        .carta { background: white; padding: 20px; margin-bottom: 15px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 8px solid var(--rosa); transition: all 0.3s ease; }
+        #contenedor { width: 100%; max-width: 400px; z-index: 2; min-height: 200px; }
+        .carta { background: white; padding: 20px; margin-bottom: 15px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 8px solid var(--rosa); animation: fadeIn 0.5s ease; }
         .bloqueada { background: rgba(255, 255, 255, 0.6); border-left-color: #adb5bd; opacity: 0.8; }
         .tiempo-tag { display: block; font-size: 0.75rem; color: var(--rosa); font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
-        .corazon-bg { position: fixed; top: -10%; font-size: 20px; user-select: none; pointer-events: none; animation: fall linear forwards; z-index: 1; }
-        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -32,10 +31,10 @@
 
     <script>
         const frases = [
-            { id: 1, texto: "Eres la razón de mi sonreir ❤️", horas: 0 },
-            { id: 2, texto: "Hoy te veias demasiado linda", horas: 12 },
+            { id: 1, texto: "¡Empieza nuestra semana de amor! ❤️", horas: 0 },
+            { id: 2, texto: "Eres lo mejor de mi día 😍", horas: 12 },
             { id: 3, texto: "Un mensajito para el día 2 🌹", horas: 24 },
-            { id: 4, texto: "Nunca olvides cuánto te quiero ✨", horas: 36 },
+            { id: 4, texto: "Nunca olvides cuánto te amo 💋", horas: 36 },
             { id: 5, texto: "Día 3: Eres mi persona favorita ✨", horas: 48 },
             { id: 6, texto: "Tu sonrisa es mi motor 💖", horas: 60 },
             { id: 7, texto: "Día 4: Mitad de semana, te amo más 🌎", horas: 72 },
@@ -48,7 +47,7 @@
             { id: 14, texto: "Mañana reiniciamos la magia. ¡Te amo! ✨", horas: 156 }
         ];
 
-        const HORAS_REINICIO = 168; // 7 días
+        const HORAS_REINICIO = 168;
 
         function activarNotificaciones() {
             Notification.requestPermission().then(p => { 
@@ -56,66 +55,47 @@
             });
         }
 
-        function crearCorazon() {
-            const c = document.createElement('div');
-            c.className = 'corazon-bg';
-            c.innerHTML = '❤️';
-            c.style.left = Math.random() * 100 + 'vw';
-            c.style.animationDuration = Math.random() * 3 + 2 + 's';
-            c.style.opacity = Math.random();
-            document.body.appendChild(c);
-            setTimeout(() => c.remove(), 5000);
-        }
-        setInterval(crearCorazon, 700);
-
         function actualizar() {
+            const contenedor = document.getElementById('contenedor');
             const ahora = Date.now();
-            let inicio = localStorage.getItem('buzon_7d_final');
             
-            if (!inicio || (ahora - parseInt(inicio)) > (HORAS_REINICIO * 3600000)) {
+            // HE CAMBIADO ESTA LLAVE: 'buzon_super_final'
+            let inicio = localStorage.getItem('buzon_super_final');
+            
+            if (!inicio) {
                 inicio = ahora;
-                localStorage.setItem('buzon_7d_final', inicio);
+                localStorage.setItem('buzon_super_final', inicio);
+            } else if ((ahora - parseInt(inicio)) > (HORAS_REINICIO * 3600000)) {
+                inicio = ahora;
+                localStorage.setItem('buzon_super_final', inicio);
                 frases.forEach(f => localStorage.removeItem('n_' + f.id));
-                document.getElementById('contenedor').innerHTML = '';
             }
             
+            // Limpiamos el contenedor solo si es necesario para evitar parpadeos
+            let contenidoHTML = '';
+            
             frases.forEach(f => {
-                let cartaId = carta-${f.id};
-                let cartaElem = document.getElementById(cartaId);
                 const millisDesbloqueo = parseInt(inicio) + (f.horas * 3600000);
                 const disponible = ahora >= millisDesbloqueo;
 
-                if (!cartaElem) {
-                    cartaElem = document.createElement('div');
-                    cartaElem.id = cartaId;
-                    document.getElementById('contenedor').appendChild(cartaElem);
-                }
-
                 if (disponible) {
-                    if (cartaElem.className !== 'carta') {
-                        cartaElem.className = 'carta';
-                        cartaElem.innerHTML = <span class="tiempo-tag">✨ Desbloqueado</span><p>${f.texto}</p>;
-                        if (!localStorage.getItem('n_' + f.id) && f.horas > 0) {
-                            if (Notification.permission === "granted") new Notification("¡Nueva Carta! 💌");
-                            localStorage.setItem('n_' + f.id, "true");
-                        }
-                    }
+                    contenidoHTML += <div class="carta"><span class="tiempo-tag">✨ Desbloqueado</span><p>${f.texto}</p></div>;
                 } else {
-                    cartaElem.className = 'carta bloqueada';
                     const resta = millisDesbloqueo - ahora;
                     const d = Math.floor(resta / 86400000);
                     const h = Math.floor((resta % 86400000) / 3600000);
                     const m = Math.floor((resta % 3600000) / 60000);
                     const s = Math.floor((resta % 60000) / 1000);
                     let textoTiempo = 🔒 En: ${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${s}s;
-                    cartaElem.innerHTML = <span class="tiempo-tag">${textoTiempo}</span><p><i>Mensaje sorpresa preparado...</i></p>;
+                    contenidoHTML += <div class="carta bloqueada"><span class="tiempo-tag">${textoTiempo}</span><p><i>Mensaje sorpresa preparado...</i></p></div>;
                 }
             });
+            contenedor.innerHTML = contenidoHTML;
         }
 
-        if (Notification.permission === "granted") document.getElementById('btnActivar').style.display = 'none';
         setInterval(actualizar, 1000);
         actualizar();
+        if (Notification.permission === "granted") document.getElementById('btnActivar').style.display = 'none';
     </script>
 </body>
 </html>
